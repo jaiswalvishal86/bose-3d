@@ -16,7 +16,7 @@ camera.position.z = 5;
 const gltfLoader = new GLTFLoader();
 
 gltfLoader.load(
-  "/models/bose.glb",
+  "bose.glb",
   (gltf) => {
     const loaderTl = gsap.timeline();
     loaderTl.to(loader, {
