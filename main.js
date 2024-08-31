@@ -30,6 +30,22 @@ gltfLoader.load(
     gltf.scene.scale.set(0.9, 0.9, 0.9);
     scene.add(gltf.scene);
 
+    // Adjust model scale based on screen width
+    const baseScale = 0.9;
+    const mobileBreakpoint = 768; // Adjust this value as needed
+    const mobileScaleFactor = 0.7; // Adjust this value to make the model smaller on mobile
+
+    function updateModelScale() {
+      const scale =
+        window.innerWidth <= mobileBreakpoint
+          ? baseScale * mobileScaleFactor
+          : baseScale;
+      gltf.scene.scale.set(scale, scale, scale);
+    }
+
+    updateModelScale();
+    window.addEventListener("resize", updateModelScale);
+
     const customizableParts = new Map();
     const partSelector = document.getElementById("partSelector");
     const colorSwatches = document.getElementById("colorSwatches");
@@ -139,11 +155,20 @@ const renderer = new THREE.WebGLRenderer({ antialias: true, alpha: true });
 renderer.setSize(window.innerWidth, window.innerHeight);
 document.querySelector(".webgl").appendChild(renderer.domElement);
 
+let initialWidth = window.innerWidth;
+let initialHeight = window.innerHeight;
+
 window.addEventListener("resize", () => {
-  renderer.setSize(window.innerWidth, window.innerHeight);
-  renderer.setPixelRatio(Math.min(window.devicePixelRatio, 2));
-  camera.aspect = window.innerWidth / window.innerHeight;
-  camera.updateProjectionMatrix();
+  // Check if it's a "real" resize event, not just a mobile scroll
+  if (window.innerWidth !== initialWidth) {
+    initialWidth = window.innerWidth;
+    initialHeight = window.innerHeight;
+
+    renderer.setSize(initialWidth, initialHeight);
+    renderer.setPixelRatio(Math.min(window.devicePixelRatio, 2));
+    camera.aspect = initialWidth / initialHeight;
+    camera.updateProjectionMatrix();
+  }
 });
 
 function animate() {
