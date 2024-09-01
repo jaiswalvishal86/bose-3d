@@ -33,6 +33,13 @@ const handleSlider = () => {
     x: `-${(currentIndex - 1) * 11.1111}%`,
     duration: 2,
     ease: "power4.out",
+    // onComplete: () => {
+    //   // Check if we need to reset the position for a seamless loop
+    //   if (currentIndex === totalSlides) {
+    //     gsap.set(".slide-titles", { x: 0 });
+    //     currentIndex = 1;
+    //   }
+    // },
   });
 };
 
@@ -77,10 +84,15 @@ const trimExcessImages = () => {
   });
 };
 
-document.addEventListener("DOMContentLoaded", () => {
-  setInterval(handleSlider, 5000);
-  document.addEventListener("click", handleSlider);
+let sliderInterval = setInterval(handleSlider, 5000);
 
+document.addEventListener("click", () => {
+  clearInterval(sliderInterval); // Clear the existing interval
+  handleSlider(); // Call the slider handler immediately
+  sliderInterval = setInterval(handleSlider, 5000); // Set a new interval
+});
+
+document.addEventListener("DOMContentLoaded", () => {
   updateImages(2);
   updateActiveSlide();
 });
@@ -132,7 +144,7 @@ gltfLoader.load(
       gltf.scene.scale.set(scale, scale, scale);
 
       // Adjust vertical position for mobile
-      const mobileYOffset = -0.5; // Adjust this value to move the model down
+      const mobileYOffset = -0.8; // Adjust this value to move the model down
       gltf.scene.position.y = isMobile ? mobileYOffset : 0;
     }
 
