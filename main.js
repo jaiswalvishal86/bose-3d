@@ -4,6 +4,87 @@ import gsap from "gsap";
 
 const loader = document.getElementById("loader");
 
+let currentIndex = 1;
+let totalSlides = 7;
+
+const updateActiveSlide = () => {
+  document.querySelectorAll(".slide-titles .title").forEach((el, index) => {
+    if (index === currentIndex) {
+      el.classList.add("active");
+    } else {
+      el.classList.remove("active");
+    }
+  });
+};
+
+const handleSlider = () => {
+  if (currentIndex < totalSlides) {
+    currentIndex++;
+  } else {
+    currentIndex = 1;
+  }
+  gsap.to(".slide-titles", {
+    onStart: () => {
+      setTimeout(() => {
+        updateActiveSlide();
+      }, 100);
+      updateImages(currentIndex + 1);
+    },
+    x: `-${(currentIndex - 1) * 11.1111}%`,
+    duration: 2,
+    ease: "power4.out",
+  });
+};
+
+const updateImages = (imgNumber) => {
+  const imgSrc = `img${imgNumber}.jpg`;
+  const imgTop = document.createElement("img");
+  const imgBottom = document.createElement("img");
+  imgTop.src = imgSrc;
+  imgBottom.src = imgSrc;
+  imgTop.style.clipPath = "polygon(100% 0%, 100% 0%, 100% 100%, 100% 100%)";
+  imgBottom.style.clipPath = "polygon(100% 0%, 100% 0%, 100% 100%, 100% 100%)";
+  imgTop.style.transform = "scale(2)";
+  imgBottom.style.transform = "scale(2)";
+
+  document.querySelector(".img-top").appendChild(imgTop);
+  document.querySelector(".img-bottom").appendChild(imgBottom);
+
+  gsap.to([imgTop, imgBottom], {
+    clipPath: "polygon(100% 0%, 0% 0%, 0% 100%, 100% 100%)",
+    transform: "scale(1)",
+    duration: 2,
+    ease: "power4.out",
+    stagger: 0.15,
+    onComplete: () => {
+      trimExcessImages();
+    },
+  });
+};
+
+const trimExcessImages = () => {
+  const selectors = [".img-top", ".img-bottom"];
+
+  selectors.forEach((selector) => {
+    const container = document.querySelector(selector);
+    const images = Array.from(container.querySelectorAll("img"));
+    const excessCount = images.length - 5;
+    if (excessCount > 0) {
+      images.slice(0, excessCount).forEach((img) => {
+        container.removeChild(img);
+      });
+    }
+  });
+};
+
+document.addEventListener("DOMContentLoaded", () => {
+  setInterval(handleSlider, 5000);
+  document.addEventListener("click", handleSlider);
+
+  updateImages(2);
+  updateActiveSlide();
+});
+
 const scene = new THREE.Scene();
 const camera = new THREE.PerspectiveCamera(
   75,
@@ -19,14 +100,24 @@ gltfLoader.load(
   "bose.glb",
   (gltf) => {
     const loaderTl = gsap.timeline();
-    loaderTl.to(loader, {
-      opacity: 0,
-      ease: "power4.easeInOut",
-    });
-    loaderTl.to(loader, {
-      display: "none",
-      ease: "power4.easeInOut",
-    });
+    loaderTl
+      .to(loader, {
+        opacity: 0,
+        ease: "power4.easeInOut",
+      })
+      .to(loader, {
+        display: "none",
+        ease: "power4.easeInOut",
+      })
+      .to(
+        gltf.scene.rotation,
+        {
+          y: 3,
+          ease: "power2.easeInOut",
+          duration: 2,
+        },
+        "<"
+      );
     gltf.scene.scale.set(0.9, 0.9, 0.9);
     scene.add(gltf.scene);
 
@@ -36,11 +127,13 @@ gltfLoader.load(
     const mobileScaleFactor = 0.7; // Adjust this value to make the model smaller on mobile
 
     function updateModelScale() {
-      const scale =
-        window.innerWidth <= mobileBreakpoint
-          ? baseScale * mobileScaleFactor
-          : baseScale;
+      const isMobile = window.innerWidth <= mobileBreakpoint;
+      const scale = isMobile ? baseScale * mobileScaleFactor : baseScale;
       gltf.scene.scale.set(scale, scale, scale);
+
+      // Adjust vertical position for mobile
+      const mobileYOffset = -0.5; // Adjust this value to move the model down
+      gltf.scene.position.y = isMobile ? mobileYOffset : 0;
     }
 
     updateModelScale();
@@ -52,26 +145,64 @@ gltfLoader.load(
 
     // Define color swatches
     const colors = {
-      white: 0x342c34,
-      green: 0x7d818d,
-      blue: 0x1c1c1c,
-      yellow: 0x5aaba5,
+      cyan: 0x5aaba5,
+      burgundy: 0x342c34,
+      gray: 0x7d818d,
+      black: 0x1c1c1c,
       purple: 0xb9aace,
       // Add more colors as needed
     };
 
+    // Define available colors for each part
+    const partColors = {
+      Ear_piece_plastic: ["cyan", "burgundy", "gray", "black", "purple"],
+      Ear_piece_rubber: ["burgundy", "gray", "black"],
+      // Add more parts and their available colors as needed
+    };
+
+    let isFirstOptionSelected = true;
+
     // Traverse the scene to find customizable parts
     gltf.scene.traverse((child) => {
-      if (child.isMesh && child.name) {
+      if (child.isMesh && child.name.startsWith("Ear")) {
         customizableParts.set(child.name, child);
 
         // Add option to part selector
         const option = document.createElement("option");
         option.value = child.name;
-        option.textContent = child.name.replace("_", " ");
+        option.textContent = child.name;
+
+        if (isFirstOptionSelected) {
+          option.selected = true;
+          isFirstOptionSelected = false;
+        }
+
         partSelector.appendChild(option);
       }
     });
+
+    // Function to update color swatches
+    function updateColorSwatches(partName) {
+      colorSwatches.innerHTML = ""; // Clear existing swatches
+      const availableColors = partColors[partName] || [];
+
+      availableColors.forEach((colorName) => {
+        const hex = colors[colorName];
+        const swatch = document.createElement("div");
+        swatch.className = "color-swatch";
+        swatch.style.backgroundColor = `#${hex.toString(16).padStart(6, "0")}`;
+        swatch.addEventListener("click", () => changePartColor(partName, hex));
+        colorSwatches.appendChild(swatch);
+      });
+    }
+
+    // Add event listener to part selector
+    partSelector.addEventListener("change", (event) => {
+      updateColorSwatches(event.target.value);
+    });
+
+    // Initialize color swatches with the first part
+    // updateColorSwatches(partSelector.value);
 
     // Create color swatches
     Object.entries(colors).forEach(([name, hex]) => {
@@ -138,17 +269,20 @@ function onMouseMove(event) {
   mouseX = event.clientX - windowHalfX;
   mouseY = event.clientY - windowHalfY;
 
-  // Update directional lights position
-  directionalLight1.position.set(
-    (mouseX / windowHalfX) * 2.5,
-    (-mouseY / windowHalfY) * 2.5,
-    3
-  );
-  directionalLight2.position.set(
-    (-mouseX / windowHalfX) * 2.5,
-    (mouseY / windowHalfY) * 2.5,
-    -3
-  );
+  // Update directional lights position with easing
+  gsap.to(directionalLight1.position, {
+    x: (mouseX / windowHalfX) * 2.5,
+    y: (-mouseY / windowHalfY) * 2.5,
+    duration: 0.5,
+    ease: "power2.out",
+  });
+
+  gsap.to(directionalLight2.position, {
+    x: (-mouseX / windowHalfX) * 2.5,
+    y: (mouseY / windowHalfY) * 2.5,
+    duration: 0.5,
+    ease: "power2.out",
+  });
 }
 
 const renderer = new THREE.WebGLRenderer({ antialias: true, alpha: true });
