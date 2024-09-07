@@ -1,6 +1,43 @@
 import * as THREE from "three";
 import { GLTFLoader } from "three/examples/jsm/loaders/GLTFLoader";
 import gsap from "gsap";
+import Lenis from "lenis";
+
+const lenis = new Lenis();
+
+let scrollY = 0;
+let scrollProgress = 0;
+
+lenis.on("scroll", (e) => {
+  scrollY = e.actualScroll;
+  scrollProgress = scrollY / (document.body.scrollHeight - window.innerHeight);
+
+  // Update model position and rotation based on scroll
+  if (model) {
+    // Adjust these values to control the range of movement
+    const maxRotation = Math.PI * 2; // Full rotation
+    const maxYPosition = 2; // Maximum vertical movement
+
+    gsap.to(model.rotation, {
+      y: scrollProgress * maxRotation,
+      duration: 0.5,
+      ease: "power2.out",
+    });
+
+    gsap.to(model.position, {
+      y: 2 + Math.sin(scrollProgress * Math.PI) * maxYPosition,
+      duration: 0.5,
+      ease: "power2.out",
+    });
+  }
+});
+
+function raf(time) {
+  lenis.raf(time);
+  requestAnimationFrame(raf);
+}
+
+requestAnimationFrame(raf);
 
 const loader = document.getElementById("loader");
 
@@ -104,13 +141,17 @@ const camera = new THREE.PerspectiveCamera(
   0.1,
   1000
 );
+camera.position.y = 2;
 camera.position.z = 5;
 
 const gltfLoader = new GLTFLoader();
 
+let model;
+
 gltfLoader.load(
   "bose.glb",
   (gltf) => {
+    model = gltf.scene;
     const loaderTl = gsap.timeline();
     loaderTl
       .to(loader, {
@@ -119,14 +160,16 @@ gltfLoader.load(
       })
       .to(loader, {
         display: "none",
-        ease: "power4.easeInOut",
       })
-      .to(
-        gltf.scene.rotation,
+      .fromTo(
+        gltf.scene.position,
         {
-          y: 3,
-          ease: "power2.easeInOut",
-          duration: 2,
+          y: -5,
+        },
+        {
+          y: 2,
+          ease: "expo.out",
+          duration: 1,
         },
         "<"
       );
@@ -144,8 +187,8 @@ gltfLoader.load(
       gltf.scene.scale.set(scale, scale, scale);
 
       // Adjust vertical position for mobile
-      const mobileYOffset = -0.8; // Adjust this value to move the model down
-      gltf.scene.position.y = isMobile ? mobileYOffset : 0;
+      const mobileYOffset = 1.5; // Adjust this value to move the model down
+      gltf.scene.position.y = isMobile ? mobileYOffset : 2;
     }
 
     updateModelScale();
@@ -237,11 +280,14 @@ gltfLoader.load(
           r: targetColor.r,
           g: targetColor.g,
           b: targetColor.b,
-          duration: 1.5,
+          duration: 1,
           ease: "power4.easeInOut",
         });
       }
     }
+
+    // Start the animation loop after the model has been loaded
+    animate();
   },
   (progress) => {
     // Update loader with loading progress
@@ -255,6 +301,43 @@ gltfLoader.load(
     loader.innerHTML = "Error loading model";
   }
 );
+
+const numSquares = 200;
+
+const squares = [];
+
+function getSquare() {
+  const x = Math.round(Math.random() * 30) - 15.5;
+  const y = Math.round(Math.random()) * 6 - 1;
+  const z = Math.round(Math.random() * -40) - 0.5;
+  const squareGeo = new THREE.PlaneGeometry(
+    Math.round(Math.random() * 0.5) + 0.5,
+    Math.round(Math.random() * 0.5) + 1
+  );
+  const color = 0x111111;
+  const squareMaterial = new THREE.MeshBasicMaterial({
+    color,
+    side: THREE.DoubleSide,
+  });
+  const squareMesh = new THREE.Mesh(squareGeo, squareMaterial);
+  squareMesh.position.set(x, y, z);
+  squareMesh.rotation.x = -Math.PI * 0.5;
+  const limit = 40;
+  function update() {
+    squareMesh.position.z += 0.02;
+    if (squareMesh.position.z > 4) {
+      squareMesh.position.z = -limit;
+    }
+  }
+
+  return { squareMesh, update };
+}
+
+for (let i = 0; i < numSquares; i++) {
+  const square = getSquare();
+  scene.add(square.squareMesh);
+  squares.push(square);
+}
 
 const ambientLight = new THREE.AmbientLight(0xffffff, 0.6);
 scene.add(ambientLight);
@@ -271,6 +354,7 @@ let mouseX = 0;
 let mouseY = 0;
 let targetX = 0;
 let targetY = 0;
+let targetZ = 0;
 const windowHalfX = window.innerWidth / 2;
 const windowHalfY = window.innerHeight / 2;
 
@@ -320,12 +404,21 @@ window.addEventListener("resize", () => {
 function animate() {
   requestAnimationFrame(animate);
 
-  // Smooth camera movement
-  targetX = mouseX * 0.005;
-  targetY = mouseY * 0.005;
-  camera.position.x += (targetX - camera.position.x) * 0.05;
-  camera.position.y += (-targetY - camera.position.y) * 0.05;
-  camera.lookAt(scene.position);
+  squares.forEach((square) => {
+    square.update();
+  });
+
+  // Only update model position if it exists
+  if (model) {
+    // Smooth camera movement
+    targetX = mouseX * 0.0005;
+    targetY = mouseY * 0.0005;
+    targetZ = mouseY * 0.0005;
+
+    model.position.x += (targetX - model.position.x) * 0.05;
+    // model.position.y += (targetY - model.position.y) * 0.05;
+    model.position.z += (targetZ - model.position.z) * 0.05;
+  }
 
   // Update directional lights to always point at the center of the scene
   directionalLight1.lookAt(scene.position);
@@ -333,5 +426,3 @@ function animate() {
 
   renderer.render(scene, camera);
 }
-
-animate();
