@@ -2,15 +2,23 @@ import * as THREE from "three";
 import { GLTFLoader } from "three/examples/jsm/loaders/GLTFLoader";
 import gsap from "gsap";
 import Lenis from "lenis";
+import { ScrollTrigger } from "gsap/ScrollTrigger";
+gsap.registerPlugin(ScrollTrigger);
 
-const lenis = new Lenis();
+const lenis = new Lenis({
+  lerp: 0.1,
+  duration: 1.5,
+});
 
 let scrollY = 0;
 let scrollProgress = 0;
 
 lenis.on("scroll", (e) => {
   scrollY = e.actualScroll;
-  scrollProgress = scrollY / (document.body.scrollHeight - window.innerHeight);
+  scrollProgress =
+    scrollY /
+    (document.querySelector(".hero-wrap").clientHeight - window.innerHeight);
+  console.log(scrollProgress);
 
   // Update model position and rotation based on scroll
   if (model) {
@@ -18,15 +26,22 @@ lenis.on("scroll", (e) => {
     const maxRotation = Math.PI * 2; // Full rotation
     const maxYPosition = 2; // Maximum vertical movement
 
+    // Use a single GSAP timeline for smoother transitions
     gsap.to(model.rotation, {
-      y: scrollProgress * maxRotation,
-      duration: 0.5,
+      y: scrollProgress <= 1.1 ? scrollProgress * maxRotation : scrollProgress,
+      x: scrollProgress <= 1.1 ? 0.001 : -0.5,
+      duration: 2,
       ease: "power2.out",
     });
 
     gsap.to(model.position, {
-      y: 2 + Math.sin(scrollProgress * Math.PI) * maxYPosition,
-      duration: 0.5,
+      y:
+        scrollProgress <= 1.1
+          ? 2 + Math.sin(scrollProgress * Math.PI) * maxYPosition
+          : model.position.y,
+      x: scrollProgress <= 1.1 ? 0.001 : (scrollProgress * maxYPosition) / 2,
+      z: scrollProgress <= 1.1 ? 0.001 : 0.25,
+      duration: 1,
       ease: "power2.out",
     });
   }
@@ -324,7 +339,7 @@ function getSquare() {
   squareMesh.rotation.x = -Math.PI * 0.5;
   const limit = 40;
   function update() {
-    squareMesh.position.z += 0.02;
+    squareMesh.position.z += 0.02 * (1 + scrollProgress);
     if (squareMesh.position.z > 4) {
       squareMesh.position.z = -limit;
     }
@@ -415,9 +430,11 @@ function animate() {
     targetY = mouseY * 0.0005;
     targetZ = mouseY * 0.0005;
 
-    model.position.x += (targetX - model.position.x) * 0.05;
-    // model.position.y += (targetY - model.position.y) * 0.05;
-    model.position.z += (targetZ - model.position.z) * 0.05;
+    if (scrollProgress <= 1) {
+      model.position.x += (targetX - model.position.x) * 0.05;
+      // model.position.y += (targetY - model.position.y) * 0.05;
+      // model.position.z += (targetZ - model.position.z) * 0.05;
+    }
   }
 
   // Update directional lights to always point at the center of the scene
@@ -426,3 +443,24 @@ function animate() {
 
   renderer.render(scene, camera);
 }
+
+// Add this after the model loading section
+const customizer = document.querySelector(".customizer");
+const productSection = document.querySelector(".product-section");
+gsap.set(customizer, { display: "none", opacity: 0 });
+
+ScrollTrigger.create({
+  trigger: productSection,
+  start: "top center",
+  end: "bottom, -10% bottom",
+  // markers: true,
+  scrub: true,
+  onEnter: () =>
+    gsap.to(customizer, { display: "flex", opacity: 1, duration: 0.5 }),
+  onLeave: () =>
+    gsap.to(customizer, { display: "none", opacity: 0, duration: 0.5 }),
+  onEnterBack: () =>
+    gsap.to(customizer, { display: "flex", opacity: 1, duration: 0.5 }),
+  onLeaveBack: () =>
+    gsap.to(customizer, { display: "none", opacity: 0, duration: 0.5 }),
+});
