@@ -18,29 +18,50 @@ lenis.on("scroll", (e) => {
   scrollProgress =
     scrollY /
     (document.querySelector(".hero-wrap").clientHeight - window.innerHeight);
-  console.log(scrollProgress);
+  // console.log(scrollProgress);
 
   // Update model position and rotation based on scroll
   if (model) {
-    // Adjust these values to control the range of movement
     const maxRotation = Math.PI * 2; // Full rotation
     const maxYPosition = 2; // Maximum vertical movement
 
-    // Use a single GSAP timeline for smoother transitions
+    // Define thresholds for different stages of animation
+    const stage1Threshold = 1.1;
+    const stage2Threshold = 2;
+
+    // Rotation animation
     gsap.to(model.rotation, {
-      y: scrollProgress <= 1.1 ? scrollProgress * maxRotation : scrollProgress,
-      x: scrollProgress <= 1.1 ? 0.001 : -0.5,
+      y:
+        scrollProgress <= stage1Threshold
+          ? scrollProgress * maxRotation
+          : scrollProgress <= stage2Threshold
+          ? maxRotation * 1.2
+          : maxRotation + ((scrollProgress + stage2Threshold) * Math.PI) / 3,
+      x: scrollProgress <= stage1Threshold ? 0 : -0.5,
       duration: 2,
       ease: "power2.out",
     });
 
+    // Position animation
     gsap.to(model.position, {
       y:
-        scrollProgress <= 1.1
-          ? 2 + Math.sin(scrollProgress * Math.PI) * maxYPosition
-          : model.position.y,
-      x: scrollProgress <= 1.1 ? 0.001 : (scrollProgress * maxYPosition) / 2,
-      z: scrollProgress <= 1.1 ? 0.001 : 0.25,
+        scrollProgress <= stage1Threshold
+          ? 2 + Math.sin(scrollProgress * Math.PI)
+          : scrollProgress <= stage2Threshold
+          ? model.position.y
+          : 2,
+      x:
+        scrollProgress <= stage1Threshold
+          ? 0.001
+          : scrollProgress <= stage2Threshold
+          ? (scrollProgress * maxYPosition) / 1.5
+          : scrollProgress * 5,
+      z:
+        scrollProgress <= stage1Threshold
+          ? 0.001
+          : scrollProgress <= stage2Threshold
+          ? 0.25
+          : -1,
       duration: 1,
       ease: "power2.out",
     });
@@ -187,6 +208,15 @@ gltfLoader.load(
           duration: 1,
         },
         "<"
+      )
+      .to(
+        gltf.scene.rotation,
+        {
+          y: -Math.PI,
+          ease: "expo.out",
+          duration: 3,
+        },
+        "<+0.2"
       );
     gltf.scene.scale.set(0.9, 0.9, 0.9);
     scene.add(gltf.scene);
@@ -446,11 +476,11 @@ function animate() {
 
 // Add this after the model loading section
 const customizer = document.querySelector(".customizer");
-const productSection = document.querySelector(".product-section");
+const spacerSection = document.querySelector(".spacer");
 gsap.set(customizer, { display: "none", opacity: 0 });
 
 ScrollTrigger.create({
-  trigger: productSection,
+  trigger: spacerSection,
   start: "top center",
   end: "bottom, -10% bottom",
   // markers: true,
