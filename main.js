@@ -3,6 +3,7 @@ import { GLTFLoader } from "three/examples/jsm/loaders/GLTFLoader";
 import gsap from "gsap";
 import Lenis from "lenis";
 import { ScrollTrigger } from "gsap/ScrollTrigger";
+import { OrbitControls } from "three/examples/jsm/controls/OrbitControls";
 gsap.registerPlugin(ScrollTrigger);
 
 const lenis = new Lenis({
@@ -12,6 +13,54 @@ const lenis = new Lenis({
 
 let scrollY = 0;
 let scrollProgress = 0;
+
+const introParagraphs = document.querySelectorAll(".banner p");
+
+// Function to split text into spans
+function splitTextToSpans(text) {
+  return text
+    .split(/(\s+)/)
+    .map((part) => {
+      if (part.trim() === "") {
+        return part;
+      } else {
+        return `<span style="display: inline-block; white-space: nowrap;">${part
+          .split("")
+          .map(
+            (char) =>
+              `<span style="opacity: 0; display: inline-block;">${char}</span>`
+          )
+          .join("")}</span>`;
+      }
+    })
+    .join("");
+}
+
+// Usage of the function for introParagraphs
+introParagraphs.forEach((paragraph) => {
+  const text = paragraph.textContent;
+  paragraph.innerHTML = splitTextToSpans(text);
+});
+
+function flickerAnimation(targets, toOpacity) {
+  gsap.to(targets, {
+    opacity: toOpacity,
+    duration: 0.2,
+    stagger: {
+      amount: 0.5,
+      from: "random",
+    },
+  });
+}
+
+ScrollTrigger.create({
+  trigger: ".banner",
+  start: "top top",
+  end: () => "bottom center",
+  onEnter: () => {
+    flickerAnimation(".banner p span", 1);
+  },
+});
 
 lenis.on("scroll", (e) => {
   scrollY = e.actualScroll;
@@ -27,7 +76,7 @@ lenis.on("scroll", (e) => {
 
     // Define thresholds for different stages of animation
     const stage1Threshold = 1.1;
-    const stage2Threshold = 2;
+    const stage2Threshold = 3;
 
     // Rotation animation
     gsap.to(model.rotation, {
@@ -65,7 +114,29 @@ lenis.on("scroll", (e) => {
       duration: 1,
       ease: "power2.out",
     });
+
+    if (scrollProgress > 3.5) {
+      gsap.to(".video-wrap", {
+        height: `${(scrollProgress - stage2Threshold) * 40}%`,
+      });
+    }
   }
+
+  // ... rest of the code ...
+});
+
+gsap.to(".details-content", {
+  display: "block",
+  rotateY: 0,
+  scale: 1,
+  duration: 1,
+  scrollTrigger: {
+    trigger: ".details",
+    start: "top center",
+    end: "bottom 30%",
+    scrub: true,
+    toggleActions: "play reserve play reverse",
+  },
 });
 
 function raf(time) {
@@ -117,7 +188,7 @@ const handleSlider = () => {
 };
 
 const updateImages = (imgNumber) => {
-  const imgSrc = `img${imgNumber}.jpg`;
+  const imgSrc = `img${imgNumber}.jpeg`;
   const imgTop = document.createElement("img");
   const imgBottom = document.createElement("img");
   imgTop.src = imgSrc;
@@ -198,7 +269,7 @@ gltfLoader.load(
         display: "none",
       })
       .fromTo(
-        gltf.scene.position,
+        model.position,
         {
           y: -5,
         },
@@ -209,17 +280,21 @@ gltfLoader.load(
         },
         "<"
       )
-      .to(
-        gltf.scene.rotation,
+      .fromTo(
+        model.rotation,
         {
           y: -Math.PI,
+        },
+        {
+          y: 0,
           ease: "expo.out",
           duration: 3,
         },
         "<+0.2"
       );
-    gltf.scene.scale.set(0.9, 0.9, 0.9);
-    scene.add(gltf.scene);
+    model.scale.set(0.9, 0.9, 0.9);
+
+    scene.add(model);
 
     // Adjust model scale based on screen width
     const baseScale = 0.9;
@@ -280,6 +355,65 @@ gltfLoader.load(
         partSelector.appendChild(option);
       }
     });
+
+    function createTextureFromImage(imageUrl) {
+      return new Promise((resolve, reject) => {
+        const loader = new THREE.TextureLoader();
+        loader.load(
+          imageUrl,
+          (texture) => resolve(texture),
+          undefined,
+          (error) => reject(error)
+        );
+      });
+    }
+
+    async function applyDefaultTexture(partName, textureUrl) {
+      const part = customizableParts.get(partName);
+      if (part) {
+        try {
+          const texture = await createTextureFromImage(textureUrl);
+
+          // Set texture wrapping to clamp to edge (no repeat)
+          texture.wrapS = THREE.ClampToEdgeWrapping;
+          texture.wrapT = THREE.ClampToEdgeWrapping;
+
+          // Compute the bounding box of the geometry
+          part.geometry.computeBoundingBox();
+          const box = part.geometry.boundingBox;
+          const geometryWidth = box.max.x - box.min.x;
+          const geometryHeight = box.max.y - box.min.y;
+
+          // Calculate aspect ratios
+          const textureAspect = texture.image.width / texture.image.height;
+          const geometryAspect = geometryWidth / geometryHeight;
+
+          // Set scale and offset to center the texture without repeating
+          if (textureAspect > geometryAspect) {
+            const scale = geometryAspect / textureAspect;
+            texture.repeat.set(scale, scale);
+            texture.offset.set((1 - scale) / 2, scale - 0.75);
+          } else {
+            const scale = textureAspect / geometryAspect;
+            texture.repeat.set(scale, scale);
+            texture.offset.set(0, scale);
+          }
+
+          const newMaterial = new THREE.MeshStandardMaterial({
+            map: texture,
+            metalness: part.material.metalness,
+            roughness: part.material.roughness,
+          });
+          part.material = newMaterial;
+        } catch (error) {
+          console.error("Error loading default texture:", error);
+        }
+      }
+    }
+
+    const defaultTexturePart = "Ear_piece_plastic";
+    const defaultTextureUrl = "./bose.png";
+    // applyDefaultTexture(defaultTexturePart, defaultTextureUrl);
 
     // Function to update color swatches
     function updateColorSwatches(partName) {
@@ -347,6 +481,40 @@ gltfLoader.load(
   }
 );
 
+//Points of interest
+const raycaster = new THREE.Raycaster();
+
+const points = [
+  {
+    position: new THREE.Vector3(-2, 0.5, 0.3),
+    element: document.querySelector(".point-0"),
+  },
+  {
+    position: new THREE.Vector3(-2, -1.5, -0.5),
+    element: document.querySelector(".point-1"),
+  },
+];
+
+points.forEach((point) => {
+  ScrollTrigger.create({
+    trigger: ".details", // Use the point's element as the trigger
+    start: "10% bottom", // When the top of the point's element hits the center of the viewport
+    end: "bottom center", // When the bottom of the point's element hits the center of the viewport
+    onEnter: () => {
+      point.element.classList.add("visible"); // Add class to make it visible
+    },
+    onLeave: () => {
+      point.element.classList.remove("visible"); // Remove class to hide it
+    },
+    onEnterBack: () => {
+      point.element.classList.add("visible"); // Add class to make it visible when scrolling back
+    },
+    onLeaveBack: () => {
+      point.element.classList.remove("visible"); // Remove class to hide it when scrolling back
+    },
+  });
+});
+
 const numSquares = 200;
 
 const squares = [];
@@ -360,7 +528,9 @@ function getSquare() {
     Math.round(Math.random() * 0.5) + 1
   );
   const color = 0x111111;
-  const squareMaterial = new THREE.MeshBasicMaterial({
+  const squareMaterial = new THREE.MeshStandardMaterial({
+    metalness: 0.2,
+    roughness: 0.8,
     color,
     side: THREE.DoubleSide,
   });
@@ -380,8 +550,8 @@ function getSquare() {
 
 for (let i = 0; i < numSquares; i++) {
   const square = getSquare();
-  scene.add(square.squareMesh);
-  squares.push(square);
+  // scene.add(square.squareMesh);
+  // squares.push(square);
 }
 
 const ambientLight = new THREE.AmbientLight(0xffffff, 0.6);
@@ -428,6 +598,10 @@ function onMouseMove(event) {
 
 const renderer = new THREE.WebGLRenderer({ antialias: true, alpha: true });
 renderer.setSize(window.innerWidth, window.innerHeight);
+renderer.shadowMap.enabled = true;
+renderer.shadowMap.type = THREE.PCFSoftShadowMap;
+// renderer.toneMapping = THREE.ACESFilmicToneMapping;
+// renderer.toneMappingExposure = 2.5;
 document.querySelector(".webgl").appendChild(renderer.domElement);
 
 let initialWidth = window.innerWidth;
@@ -470,6 +644,50 @@ function animate() {
   // Update directional lights to always point at the center of the scene
   directionalLight1.lookAt(scene.position);
   directionalLight2.lookAt(scene.position);
+
+  for (const point of points) {
+    // Get the model's world position
+    const modelWorldPosition = new THREE.Vector3();
+    model.getWorldPosition(modelWorldPosition);
+
+    // Get the model's rotation
+    const modelRotation = model.rotation.clone();
+
+    // Create a direction vector based on the model's rotation
+    const direction = new THREE.Vector3(
+      point.position.x,
+      point.position.y,
+      point.position.z
+    ); // Use all three coordinates from the point
+    direction.applyEuler(modelRotation); // Apply the model's rotation
+
+    // Set the point's position based on the model's world position and the transformed point's position
+    const pointPosition = modelWorldPosition.clone().add(direction); // Combine model position with transformed point position
+
+    // Project the point's position to screen space
+    const screenPosition = pointPosition.clone();
+    screenPosition.project(camera);
+
+    // raycaster.setFromCamera(screenPosition, camera);
+    // const intersects = raycaster.intersectObjects(scene.children, true);
+
+    // if (intersects.length === 0) {
+    //   point.element.classList.add("visible");
+    // } else {
+    //   const intersectionDistance = intersects[0].distance;
+    //   const pointDistance = point.position.distanceTo(camera.position);
+
+    //   if (intersectionDistance < pointDistance) {
+    //     point.element.classList.remove("visible");
+    //   } else {
+    //     point.element.classList.add("visible");
+    //   }
+    // }
+
+    const translateX = screenPosition.x * window.innerWidth * 0.5;
+    const translateY = -screenPosition.y * window.innerHeight * 0.5;
+    point.element.style.transform = `translateX(${translateX}px) translateY(${translateY}px)`;
+  }
 
   renderer.render(scene, camera);
 }
