@@ -1,5 +1,5 @@
 <!DOCTYPE html>
-<html lang="en">
+<html lang="en" class="lenis lenis-stopped">
   <head>
     <meta charset="UTF-8" />
     <link rel="icon" type="image/svg+xml" href="/vite.svg" />
@@ -16,10 +16,7 @@
           <p class="sub-text_small">According to your style</p>
         </div>
         <div class="controls">
-          <select id="partSelector" class="part-selector">
-            <option value="">Select a part</option>
-            <!-- Options will be populated dynamically -->
-          </select>
+          <div id="partSelector" class="part-selector"></div>
           <div id="colorSwatches">
             <!-- Color swatches will be added here dynamically -->
           </div>
@@ -91,6 +88,7 @@
         </div>
       </section>
       <section class="banner">
+        <img src="img1.jpeg" alt="banner" class="banner-img" />
         <h2>Genesis</h2>
         <p>
           At the nexus of infinite realities, the universe is a vast, complex
@@ -141,7 +139,7 @@
       <section class="video-section">
         <div class="video-wrap">
           <video
-            class="video"
+            class="banner-img"
             src="bose.mp4"
             autoplay
             loop
@@ -152,7 +150,7 @@
       </section>
       <section class="about">
         <div class="about-img">
-          <img src="img5.jpeg" alt="about-img" />
+          <img src="img5.jpeg" alt="about-img" class="banner-img" />
         </div>
         <div class="about-copy">
           <h1>The Omniversal fulcrum</h1>

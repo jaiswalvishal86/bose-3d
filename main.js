@@ -3,13 +3,15 @@ import { GLTFLoader } from "three/examples/jsm/loaders/GLTFLoader";
 import gsap from "gsap";
 import Lenis from "lenis";
 import { ScrollTrigger } from "gsap/ScrollTrigger";
-import { OrbitControls } from "three/examples/jsm/controls/OrbitControls";
+
 gsap.registerPlugin(ScrollTrigger);
 
 const lenis = new Lenis({
   lerp: 0.1,
-  duration: 1.5,
+  duration: 1,
 });
+
+lenis.stop();
 
 let scrollY = 0;
 let scrollProgress = 0;
@@ -56,9 +58,27 @@ function flickerAnimation(targets, toOpacity) {
 ScrollTrigger.create({
   trigger: ".banner",
   start: "top top",
-  end: () => "bottom center",
+  end: "bottom center",
+  scrub: true,
   onEnter: () => {
     flickerAnimation(".banner p span", 1);
+  },
+});
+
+gsap.set(".banner", {
+  clipPath: "polygon(14% 0%, 72% 0%, 88% 90%, 0% 95%)",
+  // yPercent: -10,
+});
+
+gsap.from(".banner", {
+  clipPath: "polygon(0% 0%, 100% 0%, 100% 100%, 0% 100%)",
+  // yPercent: 0,
+  ease: "power1.inOut",
+  scrollTrigger: {
+    trigger: ".banner",
+    start: "top top",
+    end: "bottom center",
+    scrub: 1,
   },
 });
 
@@ -115,11 +135,11 @@ lenis.on("scroll", (e) => {
       ease: "power2.out",
     });
 
-    if (scrollProgress > 3.5) {
-      gsap.to(".video-wrap", {
-        height: `${(scrollProgress - stage2Threshold) * 40}%`,
-      });
-    }
+    // if (scrollProgress > 3.5) {
+    //   gsap.to(".video-wrap", {
+    //     height: `${(scrollProgress - stage2Threshold) * 40}%`,
+    //   });
+    // }
   }
 
   // ... rest of the code ...
@@ -133,7 +153,7 @@ gsap.to(".details-content", {
   scrollTrigger: {
     trigger: ".details",
     start: "top center",
-    end: "bottom 30%",
+    end: "bottom bottom",
     scrub: true,
     toggleActions: "play reserve play reverse",
   },
@@ -233,7 +253,7 @@ let sliderInterval = setInterval(handleSlider, 5000);
 document.addEventListener("click", () => {
   clearInterval(sliderInterval); // Clear the existing interval
   handleSlider(); // Call the slider handler immediately
-  sliderInterval = setInterval(handleSlider, 5000); // Set a new interval
+  sliderInterval = setInterval(handleSlider, 5000);
 });
 
 document.addEventListener("DOMContentLoaded", () => {
@@ -259,7 +279,11 @@ gltfLoader.load(
   "bose.glb",
   (gltf) => {
     model = gltf.scene;
-    const loaderTl = gsap.timeline();
+    const loaderTl = gsap.timeline({
+      onComplete: () => {
+        lenis.start();
+      },
+    });
     loaderTl
       .to(loader, {
         opacity: 0,
@@ -339,81 +363,28 @@ gltfLoader.load(
 
     // Traverse the scene to find customizable parts
     gltf.scene.traverse((child) => {
-      if (child.isMesh && child.name.startsWith("Ear")) {
+      if (child.isMesh && child.name.includes("Ear")) {
         customizableParts.set(child.name, child);
 
-        // Add option to part selector
-        const option = document.createElement("option");
-        option.value = child.name;
-        option.textContent = child.name;
+        // Create a radio button for each part
+        const label = document.createElement("label");
+        const radio = document.createElement("input");
+        radio.type = "radio";
+        radio.name = "part"; // Grouping radio buttons
+        radio.value = child.name;
 
         if (isFirstOptionSelected) {
-          option.selected = true;
+          radio.checked = true; // Select the first option by default
           isFirstOptionSelected = false;
         }
 
-        partSelector.appendChild(option);
+        label.appendChild(radio);
+        label.appendChild(
+          document.createTextNode(child.name.replace("Ear_piece_", "").trim())
+        );
+        partSelector.appendChild(label);
       }
     });
-
-    function createTextureFromImage(imageUrl) {
-      return new Promise((resolve, reject) => {
-        const loader = new THREE.TextureLoader();
-        loader.load(
-          imageUrl,
-          (texture) => resolve(texture),
-          undefined,
-          (error) => reject(error)
-        );
-      });
-    }
-
-    async function applyDefaultTexture(partName, textureUrl) {
-      const part = customizableParts.get(partName);
-      if (part) {
-        try {
-          const texture = await createTextureFromImage(textureUrl);
-
-          // Set texture wrapping to clamp to edge (no repeat)
-          texture.wrapS = THREE.ClampToEdgeWrapping;
-          texture.wrapT = THREE.ClampToEdgeWrapping;
-
-          // Compute the bounding box of the geometry
-          part.geometry.computeBoundingBox();
-          const box = part.geometry.boundingBox;
-          const geometryWidth = box.max.x - box.min.x;
-          const geometryHeight = box.max.y - box.min.y;
-
-          // Calculate aspect ratios
-          const textureAspect = texture.image.width / texture.image.height;
-          const geometryAspect = geometryWidth / geometryHeight;
-
-          // Set scale and offset to center the texture without repeating
-          if (textureAspect > geometryAspect) {
-            const scale = geometryAspect / textureAspect;
-            texture.repeat.set(scale, scale);
-            texture.offset.set((1 - scale) / 2, scale - 0.75);
-          } else {
-            const scale = textureAspect / geometryAspect;
-            texture.repeat.set(scale, scale);
-            texture.offset.set(0, scale);
-          }
-
-          const newMaterial = new THREE.MeshStandardMaterial({
-            map: texture,
-            metalness: part.material.metalness,
-            roughness: part.material.roughness,
-          });
-          part.material = newMaterial;
-        } catch (error) {
-          console.error("Error loading default texture:", error);
-        }
-      }
-    }
-
-    const defaultTexturePart = "Ear_piece_plastic";
-    const defaultTextureUrl = "./bose.png";
-    // applyDefaultTexture(defaultTexturePart, defaultTextureUrl);
 
     // Function to update color swatches
     function updateColorSwatches(partName) {
@@ -481,9 +452,6 @@ gltfLoader.load(
   }
 );
 
-//Points of interest
-const raycaster = new THREE.Raycaster();
-
 const points = [
   {
     position: new THREE.Vector3(-2, 0.5, 0.3),
@@ -497,9 +465,9 @@ const points = [
 
 points.forEach((point) => {
   ScrollTrigger.create({
-    trigger: ".details", // Use the point's element as the trigger
-    start: "10% bottom", // When the top of the point's element hits the center of the viewport
-    end: "bottom center", // When the bottom of the point's element hits the center of the viewport
+    trigger: ".details",
+    start: "10% bottom",
+    end: "bottom bottom",
     onEnter: () => {
       point.element.classList.add("visible"); // Add class to make it visible
     },
@@ -514,45 +482,6 @@ points.forEach((point) => {
     },
   });
 });
-
-const numSquares = 200;
-
-const squares = [];
-
-function getSquare() {
-  const x = Math.round(Math.random() * 30) - 15.5;
-  const y = Math.round(Math.random()) * 6 - 1;
-  const z = Math.round(Math.random() * -40) - 0.5;
-  const squareGeo = new THREE.PlaneGeometry(
-    Math.round(Math.random() * 0.5) + 0.5,
-    Math.round(Math.random() * 0.5) + 1
-  );
-  const color = 0x111111;
-  const squareMaterial = new THREE.MeshStandardMaterial({
-    metalness: 0.2,
-    roughness: 0.8,
-    color,
-    side: THREE.DoubleSide,
-  });
-  const squareMesh = new THREE.Mesh(squareGeo, squareMaterial);
-  squareMesh.position.set(x, y, z);
-  squareMesh.rotation.x = -Math.PI * 0.5;
-  const limit = 40;
-  function update() {
-    squareMesh.position.z += 0.02 * (1 + scrollProgress);
-    if (squareMesh.position.z > 4) {
-      squareMesh.position.z = -limit;
-    }
-  }
-
-  return { squareMesh, update };
-}
-
-for (let i = 0; i < numSquares; i++) {
-  const square = getSquare();
-  // scene.add(square.squareMesh);
-  // squares.push(square);
-}
 
 const ambientLight = new THREE.AmbientLight(0xffffff, 0.6);
 scene.add(ambientLight);
@@ -620,12 +549,70 @@ window.addEventListener("resize", () => {
   }
 });
 
+// Helper function for linear interpolation (lerp)
+const lerp = (start, end, factor) => start + (end - start) * factor;
+
+// Parallax effect function
+function initParallax(images, factor = 0.2) {
+  const imageBounds = new Map();
+  const currentTranslateY = new Map();
+  const targetTranslateY = new Map();
+
+  // Function to update bounds of all images
+  function updateBounds() {
+    images.forEach((image) => {
+      const rect = image.getBoundingClientRect();
+      imageBounds.set(image, {
+        top: rect.top + window.scrollY,
+        bottom: rect.bottom + window.scrollY,
+      });
+    });
+  }
+
+  // Function to animate the parallax effect
+  function animate() {
+    images.forEach((image) => {
+      if (!imageBounds.has(image)) return;
+
+      const currentY = currentTranslateY.get(image) || 0;
+      const targetY = targetTranslateY.get(image) || 0;
+
+      const newTranslateY = lerp(currentY, targetY, 0.1);
+      currentTranslateY.set(image, newTranslateY);
+
+      if (Math.abs(newTranslateY - targetY) > 0.01) {
+        image.style.transform = `translateY(${newTranslateY}px) scale(1.25)`;
+      }
+    });
+
+    requestAnimationFrame(animate);
+  }
+
+  // Function to handle scroll and update target translate value for each image
+  function handleScroll() {
+    images.forEach((image) => {
+      if (!imageBounds.has(image)) return;
+
+      const bounds = imageBounds.get(image);
+      const relativeScroll = window.scrollY - bounds.top;
+      targetTranslateY.set(image, relativeScroll * factor);
+    });
+  }
+
+  // Initialize bounds and start animation on page load
+  updateBounds();
+  animate();
+
+  // Recalculate bounds on resize and update target position on scroll
+  window.addEventListener("resize", updateBounds);
+  window.addEventListener("scroll", handleScroll);
+}
+
+const images = document.querySelectorAll(".banner-img");
+initParallax(images);
+
 function animate() {
   requestAnimationFrame(animate);
-
-  squares.forEach((square) => {
-    square.update();
-  });
 
   // Only update model position if it exists
   if (model) {
@@ -667,22 +654,6 @@ function animate() {
     // Project the point's position to screen space
     const screenPosition = pointPosition.clone();
     screenPosition.project(camera);
-
-    // raycaster.setFromCamera(screenPosition, camera);
-    // const intersects = raycaster.intersectObjects(scene.children, true);
-
-    // if (intersects.length === 0) {
-    //   point.element.classList.add("visible");
-    // } else {
-    //   const intersectionDistance = intersects[0].distance;
-    //   const pointDistance = point.position.distanceTo(camera.position);
-
-    //   if (intersectionDistance < pointDistance) {
-    //     point.element.classList.remove("visible");
-    //   } else {
-    //     point.element.classList.add("visible");
-    //   }
-    // }
 
     const translateX = screenPosition.x * window.innerWidth * 0.5;
     const translateY = -screenPosition.y * window.innerHeight * 0.5;
