@@ -55,6 +55,23 @@ function flickerAnimation(targets, toOpacity) {
   });
 }
 
+const stickyHeader = document.querySelector(".sticky-header");
+
+ScrollTrigger.create({
+  trigger: ".sticky",
+  start: "top top",
+  end: "bottom center",
+  pin: true,
+  pinSpacing: true,
+  onUpdate: (self) => {
+    const progress = self.progress;
+    const maxTranslate = stickyHeader.offsetWidth - window.innerWidth;
+    const translateX = -progress * maxTranslate;
+
+    gsap.set(stickyHeader, { x: translateX });
+  },
+});
+
 ScrollTrigger.create({
   trigger: ".banner",
   start: "top top",
@@ -95,8 +112,8 @@ lenis.on("scroll", (e) => {
     const maxYPosition = 2; // Maximum vertical movement
 
     // Define thresholds for different stages of animation
-    const stage1Threshold = 1.1;
-    const stage2Threshold = 3;
+    const stage1Threshold = 1.5;
+    const stage2Threshold = 3.5;
 
     // Rotation animation
     gsap.to(model.rotation, {
@@ -104,8 +121,8 @@ lenis.on("scroll", (e) => {
         scrollProgress <= stage1Threshold
           ? scrollProgress * maxRotation
           : scrollProgress <= stage2Threshold
-          ? maxRotation * 1.2
-          : maxRotation + ((scrollProgress + stage2Threshold) * Math.PI) / 3,
+          ? maxRotation * 1.1
+          : maxRotation + ((scrollProgress + stage2Threshold) * Math.PI) / 4,
       x: scrollProgress <= stage1Threshold ? 0 : -0.5,
       duration: 2,
       ease: "power2.out",
@@ -115,15 +132,15 @@ lenis.on("scroll", (e) => {
     gsap.to(model.position, {
       y:
         scrollProgress <= stage1Threshold
-          ? 2 + Math.sin(scrollProgress * Math.PI)
+          ? 2 + Math.sin((scrollProgress / 1.5) * Math.PI)
           : scrollProgress <= stage2Threshold
           ? model.position.y
           : 2,
       x:
         scrollProgress <= stage1Threshold
-          ? 0.001
+          ? 0
           : scrollProgress <= stage2Threshold
-          ? (scrollProgress * maxYPosition) / 1.5
+          ? (scrollProgress * maxYPosition) / 4
           : scrollProgress * 5,
       z:
         scrollProgress <= stage1Threshold
@@ -145,19 +162,19 @@ lenis.on("scroll", (e) => {
   // ... rest of the code ...
 });
 
-gsap.to(".details-content", {
-  display: "block",
-  rotateY: 0,
-  scale: 1,
-  duration: 1,
-  scrollTrigger: {
-    trigger: ".details",
-    start: "top center",
-    end: "bottom bottom",
-    scrub: true,
-    toggleActions: "play reserve play reverse",
-  },
-});
+// gsap.to(".details-content", {
+//   display: "block",
+//   rotateY: 0,
+//   scale: 1,
+//   duration: 1,
+//   scrollTrigger: {
+//     trigger: ".details",
+//     start: "top center",
+//     end: "bottom bottom",
+//     scrub: true,
+//     toggleActions: "play reserve play reverse",
+//   },
+// });
 
 function raf(time) {
   lenis.raf(time);
@@ -376,6 +393,7 @@ gltfLoader.load(
         if (isFirstOptionSelected) {
           radio.checked = true; // Select the first option by default
           isFirstOptionSelected = false;
+          // updateColorSwatches(radio.value);
         }
 
         label.appendChild(radio);
@@ -407,16 +425,20 @@ gltfLoader.load(
     });
 
     // Initialize color swatches with the first part
-    // updateColorSwatches(partSelector.value);
+    // updateColorSwatches(partSelector.querySelector("input").value);
 
     // Create color swatches
     Object.entries(colors).forEach(([name, hex]) => {
       const swatch = document.createElement("div");
       swatch.className = "color-swatch";
       swatch.style.backgroundColor = `#${hex.toString(16).padStart(6, "0")}`;
-      swatch.addEventListener("click", () =>
-        changePartColor(partSelector.value, hex)
-      );
+      swatch.addEventListener("click", () => {
+        partSelector.querySelectorAll("input").forEach((input) => {
+          if (input.checked === true) {
+            changePartColor(input.value, hex);
+          }
+        });
+      });
       colorSwatches.appendChild(swatch);
     });
 
@@ -441,9 +463,10 @@ gltfLoader.load(
   },
   (progress) => {
     // Update loader with loading progress
-    const percentComplete = Math.round(
-      (progress.loaded / progress.total) * 100
-    );
+    const percentComplete =
+      progress.total > 0
+        ? Math.round((progress.loaded / progress.total) * 100)
+        : 0; // Prevent division by zero
     loader.innerHTML = `Loading ${percentComplete}%`;
   },
   (error) => {
@@ -465,7 +488,7 @@ const points = [
 
 points.forEach((point) => {
   ScrollTrigger.create({
-    trigger: ".details",
+    trigger: ".sticky",
     start: "10% bottom",
     end: "bottom bottom",
     onEnter: () => {
