@@ -121,7 +121,7 @@ lenis.on("scroll", (e) => {
         scrollProgress <= stage1Threshold
           ? scrollProgress * maxRotation
           : scrollProgress <= stage2Threshold
-          ? maxRotation * 1.1
+          ? maxRotation * 1.1 + scrollProgress * 0.25
           : maxRotation + ((scrollProgress + stage2Threshold) * Math.PI) / 4,
       x: scrollProgress <= stage1Threshold ? 0 : -0.5,
       duration: 2,
@@ -288,14 +288,12 @@ const camera = new THREE.PerspectiveCamera(
 camera.position.y = 2;
 camera.position.z = 5;
 
-const gltfLoader = new GLTFLoader();
+const loadingCounter = loader.querySelector(".loading-counter");
 
-let model;
-
-gltfLoader.load(
-  "bose.glb",
-  (gltf) => {
-    model = gltf.scene;
+const loadingManager = new THREE.LoadingManager(
+  // onLoad callback
+  () => {
+    // Hide loader when all assets are loaded
     const loaderTl = gsap.timeline({
       onComplete: () => {
         lenis.start();
@@ -328,11 +326,34 @@ gltfLoader.load(
         },
         {
           y: 0,
-          ease: "expo.out",
-          duration: 3,
+          ease: "power4.easeOut",
+          duration: 1,
         },
         "<+0.2"
       );
+  },
+
+  // onProgress callback
+  (itemUrl, itemsLoaded, itemsTotal) => {
+    const progress = Math.floor((itemsLoaded / itemsTotal) * 100);
+    loadingCounter.textContent = `${progress}`;
+  },
+
+  // onError callback
+  (url) => {
+    console.error(`Error loading ${url}`);
+  }
+);
+
+const gltfLoader = new GLTFLoader(loadingManager);
+
+let model;
+
+gltfLoader.load(
+  "bose.glb",
+  (gltf) => {
+    model = gltf.scene;
+
     model.scale.set(0.9, 0.9, 0.9);
 
     scene.add(model);
@@ -463,11 +484,11 @@ gltfLoader.load(
   },
   (progress) => {
     // Update loader with loading progress
-    const percentComplete =
-      progress.total > 0
-        ? Math.round((progress.loaded / progress.total) * 100)
-        : 0; // Prevent division by zero
-    loader.innerHTML = `Loading ${percentComplete}%`;
+    // const percentComplete =
+    //   progress.total > 0
+    //     ? Math.round((progress.loaded / progress.total) * 100)
+    //     : 0; // Prevent division by zero
+    // loader.innerHTML = `Loading ${percentComplete}%`;
   },
   (error) => {
     console.error("An error occurred while loading the model:", error);
@@ -484,13 +505,17 @@ const points = [
     position: new THREE.Vector3(-2, -1.5, -0.5),
     element: document.querySelector(".point-1"),
   },
+  // {
+  //   position: new THREE.Vector3(2, 0, 0.5),
+  //   element: document.querySelector(".point-2"),
+  // },
 ];
 
 points.forEach((point) => {
   ScrollTrigger.create({
     trigger: ".sticky",
     start: "10% bottom",
-    end: "bottom bottom",
+    end: "top center",
     onEnter: () => {
       point.element.classList.add("visible"); // Add class to make it visible
     },

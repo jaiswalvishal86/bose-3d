@@ -18,13 +18,25 @@
   -moz-osx-font-smoothing: grayscale;
 }
 
+nav {
+  position: fixed;
+  top: 0;
+  left: 0;
+  width: 100%;
+  padding: 2em;
+  display: flex;
+  align-items: center;
+  justify-content: flex-end;
+  z-index: 3;
+}
+
 a {
-  font-weight: 500;
+  font-weight: 400;
   color: #a0a0a0;
   text-decoration: inherit;
 }
 a:hover {
-  color: #a0a0a0;
+  color: #cccccc;
 }
 
 body {
@@ -63,9 +75,8 @@ html.lenis body {
   height: 100%;
   background-color: #000;
   font-size: 1.25rem;
-  display: flex;
-  justify-content: center;
-  align-items: center;
+  display: grid;
+  place-items: center;
   z-index: 1000;
   transition: opacity 0.5s ease-in-out;
 }
@@ -206,7 +217,7 @@ section {
 
 .sticky {
   position: relative;
-  z-index: -1;
+  z-index: 1;
 }
 
 .sticky-header {
@@ -331,10 +342,15 @@ input[type="radio"]:after {
   border-radius: 1rem;
   margin-right: 0.5rem;
 
-  background-color: #d1d3d1;
+  background-color: #8c8c8c;
   content: "";
   display: inline-block;
   border: 2px solid white;
+  transition: background-color 0.3s;
+}
+
+input[type="radio"]:hover:after {
+  background-color: #3e3e3e;
 }
 
 input[type="radio"]:checked:after {
@@ -490,10 +506,10 @@ input[type="radio"]:checked:after {
   perspective: 1000px;
 }
 
-.about-img,
+/* .about-img,
 .about-copy {
   flex: 1;
-}
+} */
 
 .about-img {
   clip-path: polygon(4% 0, 83% 21%, 100% 73%, 0% 100%);
@@ -503,6 +519,7 @@ input[type="radio"]:checked:after {
   width: 100%;
   height: 100%;
   object-fit: cover;
+  min-height: 32rem;
 }
 
 .about-copy h1 {
@@ -636,7 +653,7 @@ input[type="radio"]:checked:after {
   }
 
   .banner {
-    padding: 2rem;
+    padding: 4rem 2rem;
   }
 
   .banner h2 {
