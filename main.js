@@ -114,6 +114,7 @@ lenis.on("scroll", (e) => {
     // Define thresholds for different stages of animation
     const stage1Threshold = 1.5;
     const stage2Threshold = 3.5;
+    const stage3Threshold = 7;
 
     // Rotation animation
     gsap.to(model.rotation, {
@@ -122,6 +123,8 @@ lenis.on("scroll", (e) => {
           ? scrollProgress * maxRotation
           : scrollProgress <= stage2Threshold
           ? maxRotation * 1.1 + scrollProgress * 0.25
+          : scrollProgress >= stage3Threshold
+          ? maxRotation * scrollProgress * 0.25
           : maxRotation + ((scrollProgress + stage2Threshold) * Math.PI) / 4,
       x: scrollProgress <= stage1Threshold ? 0 : -0.5,
       duration: 2,
@@ -141,15 +144,17 @@ lenis.on("scroll", (e) => {
           ? 0
           : scrollProgress <= stage2Threshold
           ? (scrollProgress * maxYPosition) / 4
-          : scrollProgress * 5,
+          : scrollProgress >= stage3Threshold
+          ? 0
+          : scrollProgress * 4,
       z:
         scrollProgress <= stage1Threshold
           ? 0.001
           : scrollProgress <= stage2Threshold
           ? 0.25
-          : -1,
+          : 0,
       duration: 1,
-      ease: "power2.out",
+      ease: "power4.easeOut",
     });
 
     // if (scrollProgress > 3.5) {
