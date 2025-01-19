@@ -498,11 +498,11 @@ input[type="radio"]:checked:after {
 }
 
 .about {
-  padding: 4rem;
+  /* padding: 4rem; */
   display: flex;
   justify-content: center;
   align-items: center;
-  gap: 4rem;
+  /* gap: 4rem; */
   /* perspective: 1000px; */
 }
 
@@ -512,8 +512,12 @@ input[type="radio"]:checked:after {
 } */
 
 .about-img {
+  width: 24rem;
+  height: 32rem;
   clip-path: polygon(4% 0, 83% 21%, 100% 73%, 0% 100%);
-  max-width: 40rem;
+  /* max-width: 40rem; */
+  position: absolute;
+  z-index: -1;
 }
 
 .about-img img {

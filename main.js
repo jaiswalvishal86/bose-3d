@@ -99,6 +99,23 @@ gsap.from(".banner", {
   },
 });
 
+const clipAnimation = gsap.timeline({
+  scrollTrigger: {
+    trigger: ".about",
+    start: "center center",
+    end: "+=850 center",
+    scrub: 1,
+    pin: true,
+    pinSpacing: true,
+  },
+});
+
+clipAnimation.to(".about-img", {
+  width: "100vw",
+  height: "100vh",
+  clipPath: "polygon(0% 0, 100% 0%, 100% 100%, 0% 100%)",
+});
+
 lenis.on("scroll", (e) => {
   scrollY = e.actualScroll;
   scrollProgress =
@@ -156,30 +173,8 @@ lenis.on("scroll", (e) => {
       duration: 1,
       ease: "power4.easeOut",
     });
-
-    // if (scrollProgress > 3.5) {
-    //   gsap.to(".video-wrap", {
-    //     height: `${(scrollProgress - stage2Threshold) * 40}%`,
-    //   });
-    // }
   }
-
-  // ... rest of the code ...
 });
-
-// gsap.to(".details-content", {
-//   display: "block",
-//   rotateY: 0,
-//   scale: 1,
-//   duration: 1,
-//   scrollTrigger: {
-//     trigger: ".details",
-//     start: "top center",
-//     end: "bottom bottom",
-//     scrub: true,
-//     toggleActions: "play reserve play reverse",
-//   },
-// });
 
 function raf(time) {
   lenis.raf(time);
