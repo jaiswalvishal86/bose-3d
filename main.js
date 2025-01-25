@@ -17,6 +17,7 @@ let scrollY = 0;
 let scrollProgress = 0;
 
 const introParagraphs = document.querySelectorAll(".banner p");
+const footerTexts = document.querySelectorAll(".footer h2");
 
 // Function to split text into spans
 function splitTextToSpans(text) {
@@ -40,6 +41,11 @@ function splitTextToSpans(text) {
 
 // Usage of the function for introParagraphs
 introParagraphs.forEach((paragraph) => {
+  const text = paragraph.textContent;
+  paragraph.innerHTML = splitTextToSpans(text);
+});
+
+footerTexts.forEach((paragraph) => {
   const text = paragraph.textContent;
   paragraph.innerHTML = splitTextToSpans(text);
 });
@@ -132,6 +138,10 @@ lenis.on("scroll", (e) => {
     const stage1Threshold = 1.5;
     const stage2Threshold = 3.5;
     const stage3Threshold = 7;
+
+    if (scrollProgress >= 8) {
+      flickerAnimation(".footer h2 span", 1);
+    }
 
     // Rotation animation
     gsap.to(model.rotation, {
@@ -296,17 +306,24 @@ const loadingManager = new THREE.LoadingManager(
     // Hide loader when all assets are loaded
     const loaderTl = gsap.timeline({
       onComplete: () => {
+        loader.style.display = "none";
         lenis.start();
       },
     });
     loaderTl
       .to(loader, {
-        opacity: 0,
-        ease: "power4.easeInOut",
+        clipPath: "polygon(0 0, 100% 0, 100% 0%, 0 0%)",
+        duration: 1.25,
+        delay: 0.5,
+        ease: "circ.in",
       })
-      .to(loader, {
-        display: "none",
-      })
+      .to(
+        ".loading-counter",
+        {
+          opacity: 0,
+        },
+        "<+0.1"
+      )
       .fromTo(
         model.position,
         {
@@ -314,10 +331,9 @@ const loadingManager = new THREE.LoadingManager(
         },
         {
           y: 2,
-          ease: "expo.out",
+          ease: "circ.out",
           duration: 1,
-        },
-        "<"
+        }
       )
       .fromTo(
         model.rotation,
@@ -326,10 +342,10 @@ const loadingManager = new THREE.LoadingManager(
         },
         {
           y: 0,
-          ease: "power4.easeOut",
+          ease: "circ.out",
           duration: 1,
         },
-        "<+0.2"
+        "<+0.1"
       );
   },
 
@@ -382,18 +398,18 @@ gltfLoader.load(
 
     // Define color swatches
     const colors = {
-      cyan: 0x5aaba5,
-      burgundy: 0x342c34,
-      gray: 0x7d818d,
-      black: 0x1c1c1c,
-      purple: 0xb9aace,
+      slateBlue: 0x1f2e3b,
+      dark: 0x1c1c1c,
+      green: 0x153238,
+      blue: 0x0a0f29,
+      lightGreen: 0x124c52,
       // Add more colors as needed
     };
 
     // Define available colors for each part
     const partColors = {
-      Ear_piece_plastic: ["cyan", "burgundy", "gray", "black", "purple"],
-      Ear_piece_rubber: ["burgundy", "gray", "black"],
+      Ear_piece_plastic: ["slateBlue", "dark", "green", "blue", "lightGreen"],
+      Ear_piece_rubber: ["dark", "slateBlue"],
       // Add more parts and their available colors as needed
     };
 
@@ -401,6 +417,7 @@ gltfLoader.load(
 
     // Traverse the scene to find customizable parts
     gltf.scene.traverse((child) => {
+      console.log(child.name);
       if (child.isMesh && child.name.includes("Ear")) {
         customizableParts.set(child.name, child);
 
