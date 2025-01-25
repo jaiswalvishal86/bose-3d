@@ -646,11 +646,11 @@ footer {
     width: 100%;
   }
 
-  .title h1 {
+  .title h2 {
     opacity: 0;
   }
 
-  .active h1 {
+  .active h2 {
     opacity: 1;
   }
 
