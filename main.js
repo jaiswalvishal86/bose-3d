@@ -296,7 +296,17 @@ const camera = new THREE.PerspectiveCamera(
   1000
 );
 camera.position.y = 2;
-camera.position.z = 5;
+
+const mobileBreakpoint = 600;
+
+function updateModelScale() {
+  const isMobile = window.innerWidth <= mobileBreakpoint;
+
+  camera.position.z = isMobile ? 7 : 5;
+}
+
+updateModelScale();
+window.addEventListener("resize", updateModelScale);
 
 const loadingCounter = loader.querySelector(".loading-counter");
 
@@ -306,8 +316,10 @@ const loadingManager = new THREE.LoadingManager(
     // Hide loader when all assets are loaded
     const loaderTl = gsap.timeline({
       onComplete: () => {
-        loader.style.display = "none";
-        lenis.start();
+        setTimeout(() => {
+          loader.style.display = "none";
+          lenis.start();
+        }, 500); // Delay before hiding the loader
       },
     });
     loaderTl
@@ -352,7 +364,9 @@ const loadingManager = new THREE.LoadingManager(
   // onProgress callback
   (itemUrl, itemsLoaded, itemsTotal) => {
     const progress = Math.floor((itemsLoaded / itemsTotal) * 100);
-    loadingCounter.textContent = `${progress}`;
+    requestAnimationFrame(() => {
+      loadingCounter.textContent = `${progress}%`;
+    });
   },
 
   // onError callback
@@ -369,28 +383,6 @@ gltfLoader.load(
   "bose.glb",
   (gltf) => {
     model = gltf.scene;
-
-    model.scale.set(0.9, 0.9, 0.9);
-
-    scene.add(model);
-
-    // Adjust model scale based on screen width
-    const baseScale = 0.9;
-    const mobileBreakpoint = 768; // Adjust this value as needed
-    const mobileScaleFactor = 0.7; // Adjust this value to make the model smaller on mobile
-
-    function updateModelScale() {
-      const isMobile = window.innerWidth <= mobileBreakpoint;
-      const scale = isMobile ? baseScale * mobileScaleFactor : baseScale;
-      gltf.scene.scale.set(scale, scale, scale);
-
-      // Adjust vertical position for mobile
-      const mobileYOffset = 1.5; // Adjust this value to move the model down
-      gltf.scene.position.y = isMobile ? mobileYOffset : 2;
-    }
-
-    updateModelScale();
-    window.addEventListener("resize", updateModelScale);
 
     const customizableParts = new Map();
     const partSelector = document.getElementById("partSelector");
@@ -496,7 +488,10 @@ gltfLoader.load(
       }
     }
 
-    // Start the animation loop after the model has been loaded
+    model.scale.set(0.9, 0.9, 0.9);
+
+    scene.add(model);
+
     animate();
   },
   (progress) => {
@@ -635,7 +630,7 @@ function initParallax(images, factor = 0.2) {
   }
 
   // Function to animate the parallax effect
-  function animate() {
+  function animateImages() {
     images.forEach((image) => {
       if (!imageBounds.has(image)) return;
 
@@ -650,7 +645,7 @@ function initParallax(images, factor = 0.2) {
       }
     });
 
-    requestAnimationFrame(animate);
+    requestAnimationFrame(animateImages);
   }
 
   // Function to handle scroll and update target translate value for each image
@@ -666,7 +661,7 @@ function initParallax(images, factor = 0.2) {
 
   // Initialize bounds and start animation on page load
   updateBounds();
-  animate();
+  animateImages();
 
   // Recalculate bounds on resize and update target position on scroll
   window.addEventListener("resize", updateBounds);
