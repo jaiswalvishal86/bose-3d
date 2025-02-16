@@ -88,22 +88,22 @@ ScrollTrigger.create({
   },
 });
 
-gsap.set(".banner", {
-  clipPath: "polygon(14% 0%, 72% 0%, 88% 90%, 0% 95%)",
-  // yPercent: -10,
-});
+// gsap.set(".banner", {
+//   clipPath: "polygon(14% 0%, 72% 0%, 88% 90%, 0% 95%)",
+//   // yPercent: -10,
+// });
 
-gsap.from(".banner", {
-  clipPath: "polygon(0% 0%, 100% 0%, 100% 100%, 0% 100%)",
-  // yPercent: 0,
-  ease: "power1.inOut",
-  scrollTrigger: {
-    trigger: ".banner",
-    start: "top top",
-    end: "bottom center",
-    scrub: 1,
-  },
-});
+// gsap.from(".banner", {
+//   clipPath: "polygon(0% 0%, 100% 0%, 100% 100%, 0% 100%)",
+//   // yPercent: 0,
+//   ease: "power1.inOut",
+//   scrollTrigger: {
+//     trigger: ".banner",
+//     start: "top top",
+//     end: "bottom center",
+//     scrub: 1,
+//   },
+// });
 
 const clipAnimation = gsap.timeline({
   scrollTrigger: {
@@ -127,7 +127,7 @@ lenis.on("scroll", (e) => {
   scrollProgress =
     scrollY /
     (document.querySelector(".hero-wrap").clientHeight - window.innerHeight);
-  // console.log(scrollProgress);
+  console.log(scrollProgress);
 
   // Update model position and rotation based on scroll
   if (model) {
@@ -138,6 +138,14 @@ lenis.on("scroll", (e) => {
     const stage1Threshold = 1.5;
     const stage2Threshold = 3.5;
     const stage3Threshold = 7;
+
+    if (scrollProgress > 0.4) {
+      gsap.to(".sub-text-wrap.is-hero", { opacity: 0, duration: 0.5 });
+      gsap.set(".sub-text-wrap.is-hero", { display: "none", delay: 0.5 });
+    } else {
+      gsap.to(".sub-text-wrap.is-hero", { opacity: 1, duration: 0.5 });
+      gsap.set(".sub-text-wrap.is-hero", { display: "flex" });
+    }
 
     if (scrollProgress >= 8) {
       flickerAnimation(".footer h2 span", 1);
@@ -319,7 +327,7 @@ const loadingManager = new THREE.LoadingManager(
         setTimeout(() => {
           loader.style.display = "none";
           lenis.start();
-        }, 500); // Delay before hiding the loader
+        }, 50); // Delay before hiding the loader
       },
     });
     loaderTl
@@ -380,7 +388,7 @@ const gltfLoader = new GLTFLoader(loadingManager);
 let model;
 
 gltfLoader.load(
-  "bose.glb",
+  "headphone.glb",
   (gltf) => {
     model = gltf.scene;
 

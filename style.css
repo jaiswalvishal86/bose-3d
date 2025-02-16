@@ -166,9 +166,10 @@ section {
 }
 
 .hero-svg-wrap {
-  width: 95%;
+  width: 90%;
   position: relative;
-  margin: 6rem auto 1rem auto;
+  margin: 4rem auto 1rem auto;
+  mix-blend-mode: difference;
 }
 
 .sub-text-wrap {
@@ -177,6 +178,13 @@ section {
   justify-content: center;
   align-items: center;
   gap: 0.5rem;
+}
+
+.sub-text-wrap.is-hero {
+  position: fixed;
+  top: 50%;
+  left: 50%;
+  transform: translate(-50%, -50%);
 }
 
 .sub-text-wrap .sub-text_large {
@@ -576,6 +584,7 @@ input[type="radio"]:checked:after {
 .banner p {
   width: 50%;
   text-align: center;
+  text-wrap: balance;
 }
 
 footer {
