@@ -137,11 +137,12 @@ canvas {
 
 .point .annotate-text {
   position: absolute;
-  top: -30px;
+  top: -1.5rem;
   right: 24px;
   width: 200px;
   color: #ffffff;
-  font-size: 1.5rem;
+  font-size: 1.25rem;
+  line-height: 1.25;
   pointer-events: none;
   transform: scale(0, 0);
   transition: transform 0.5s ease-in-out;
