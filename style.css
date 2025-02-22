@@ -43,8 +43,8 @@ body {
   margin: 0;
   display: flex;
   place-items: center;
-  min-width: 320px;
-  min-height: 100vh;
+  /* min-width: 320px;
+  min-height: 100vh; */
 }
 #app {
   position: relative;
@@ -169,7 +169,7 @@ section {
   width: 90%;
   position: relative;
   margin: 4rem auto 1rem auto;
-  mix-blend-mode: difference;
+  /* mix-blend-mode: difference; */
 }
 
 .sub-text-wrap {
@@ -675,6 +675,11 @@ footer {
     flex: 0;
   }
 
+  .about-img {
+    width: 20rem;
+    height: 28rem;
+  }
+
   .about-copy h2 {
     font-size: 3.5rem;
   }
@@ -704,7 +709,7 @@ footer {
   }
 
   .banner h2 {
-    font-size: 5rem;
+    font-size: 3.5rem;
   }
 
   .about {

@@ -88,23 +88,6 @@ ScrollTrigger.create({
   },
 });
 
-// gsap.set(".banner", {
-//   clipPath: "polygon(14% 0%, 72% 0%, 88% 90%, 0% 95%)",
-//   // yPercent: -10,
-// });
-
-// gsap.from(".banner", {
-//   clipPath: "polygon(0% 0%, 100% 0%, 100% 100%, 0% 100%)",
-//   // yPercent: 0,
-//   ease: "power1.inOut",
-//   scrollTrigger: {
-//     trigger: ".banner",
-//     start: "top top",
-//     end: "bottom center",
-//     scrub: 1,
-//   },
-// });
-
 const clipAnimation = gsap.timeline({
   scrollTrigger: {
     trigger: ".about",
@@ -127,7 +110,6 @@ lenis.on("scroll", (e) => {
   scrollProgress =
     scrollY /
     (document.querySelector(".hero-wrap").clientHeight - window.innerHeight);
-  console.log(scrollProgress);
 
   // Update model position and rotation based on scroll
   if (model) {
@@ -243,15 +225,19 @@ const handleSlider = () => {
 };
 
 const updateImages = (imgNumber) => {
-  const imgSrc = `img${imgNumber}.jpeg`;
+  const imgSrc = `img${imgNumber}.webp`;
   const imgTop = document.createElement("img");
   const imgBottom = document.createElement("img");
   imgTop.src = imgSrc;
   imgBottom.src = imgSrc;
+  imgTop.loading = "lazy";
+  imgBottom.loading = "lazy";
   imgTop.style.clipPath = "polygon(100% 0%, 100% 0%, 100% 100%, 100% 100%)";
   imgBottom.style.clipPath = "polygon(100% 0%, 100% 0%, 100% 100%, 100% 100%)";
   imgTop.style.transform = "scale(2)";
   imgBottom.style.transform = "scale(2)";
+  imgTop.alt = `${imgNumber}`;
+  imgBottom.alt = `${imgNumber}`;
 
   document.querySelector(".img-top").appendChild(imgTop);
   document.querySelector(".img-bottom").appendChild(imgBottom);
@@ -342,7 +328,7 @@ const loadingManager = new THREE.LoadingManager(
         {
           opacity: 0,
         },
-        "<+0.1"
+        "<"
       )
       .fromTo(
         model.position,
@@ -351,7 +337,7 @@ const loadingManager = new THREE.LoadingManager(
         },
         {
           y: 2,
-          ease: "circ.out",
+          ease: "expo.out",
           duration: 1,
         }
       )
@@ -362,8 +348,8 @@ const loadingManager = new THREE.LoadingManager(
         },
         {
           y: 0,
-          ease: "circ.out",
-          duration: 1,
+          ease: "ease.out",
+          duration: 0.75,
         },
         "<+0.1"
       );
@@ -417,7 +403,6 @@ gltfLoader.load(
 
     // Traverse the scene to find customizable parts
     gltf.scene.traverse((child) => {
-      console.log(child.name);
       if (child.isMesh && child.name.includes("Ear")) {
         customizableParts.set(child.name, child);
 
@@ -461,9 +446,6 @@ gltfLoader.load(
     partSelector.addEventListener("change", (event) => {
       updateColorSwatches(event.target.value);
     });
-
-    // Initialize color swatches with the first part
-    // updateColorSwatches(partSelector.querySelector("input").value);
 
     // Create color swatches
     Object.entries(colors).forEach(([name, hex]) => {
@@ -713,11 +695,11 @@ function animate() {
       point.position.x,
       point.position.y,
       point.position.z
-    ); // Use all three coordinates from the point
-    direction.applyEuler(modelRotation); // Apply the model's rotation
+    );
+    direction.applyEuler(modelRotation);
 
     // Set the point's position based on the model's world position and the transformed point's position
-    const pointPosition = modelWorldPosition.clone().add(direction); // Combine model position with transformed point position
+    const pointPosition = modelWorldPosition.clone().add(direction);
 
     // Project the point's position to screen space
     const screenPosition = pointPosition.clone();
