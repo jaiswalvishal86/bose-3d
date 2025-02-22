@@ -169,7 +169,17 @@
 
       <footer class="footer">
         <h2>Ready to Elevate Your Audio Experience?</h2>
-        <a href="https://bose.com" target="_blank" class="cta">Explore</a>
+        <form id="subscribe-form">
+          <input
+            type="email"
+            id="email"
+            name="email"
+            placeholder="Enter your email"
+            required
+          />
+          <button class="cta" type="submit">Join the waitlist</button>
+        </form>
+        <p id="responseMessage"></p>
       </footer>
     </div>
     <script type="module" src="/main.js"></script>

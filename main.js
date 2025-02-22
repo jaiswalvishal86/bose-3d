@@ -3,6 +3,36 @@ import { GLTFLoader } from "three/examples/jsm/loaders/GLTFLoader";
 import gsap from "gsap";
 import Lenis from "lenis";
 import { ScrollTrigger } from "gsap/ScrollTrigger";
+import emailjs from "@emailjs/browser";
+
+emailjs.init("uXBTUAzaTTVMcYGMW");
+
+const subscribeForm = document.getElementById("subscribe-form");
+
+subscribeForm.addEventListener("submit", function (event) {
+  event.preventDefault(); // Prevent default form submission
+
+  const responseMessage = document.getElementById("responseMessage");
+
+  // Collect form data
+  let formData = {
+    email: document.getElementById("email").value,
+  };
+
+  // Send email via EmailJS
+  emailjs
+    .send("service_u7505o7", "template_phd8vzz", formData)
+    .then(function (response) {
+      //console.log("Email sent:", response);
+      subscribeForm.reset();
+      subscribeForm.style.display = "none";
+      responseMessage.textContent = "Thank you! You are in the list.";
+    })
+    .catch(function (error) {
+      alert("Failed to send email.");
+      console.error("Error:", error);
+    });
+});
 
 gsap.registerPlugin(ScrollTrigger);
 
